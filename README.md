@@ -8,7 +8,9 @@
 * Query Video Resolution: 352 x 288
 
 ### How to run
-* Clone this repository. I have added Videos and Queries inside Dataset folder already. However, if you need, you can also download Audio files from the Dataset link given above. 
+* Clone this repository. 
+* Create a folder named `Dataset` in the root directory of the project. 
+  * Download the dataset from the link given above and extract it in the `Dataset` folder.
 * Install Maven and Java
 * Run the following command to build the project
 ```
