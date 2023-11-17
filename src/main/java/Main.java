@@ -3,6 +3,8 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.*;
+import java.util.Arrays;
+import javax.sound.sampled.UnsupportedAudioFileException;
 
 import org.bytedeco.opencv.opencv_core.*;
 import org.bytedeco.javacv.Frame;
@@ -19,12 +21,19 @@ public class Main {
     public static final Integer WIDTH = 352;
     public static final Integer HEIGHT = 288;
     public static final String PREPROCESSED_FOLDER = "./Preprocessing/rgb_values";
+    public static final String PREPROCESSED_FOLDER_LOW_PASS = "./Preprocessing/rgb_values_low_pass";
     public static final String VIDEO_FOLDER = "./Dataset/Videos";
+    public static final String AUDIO_FOLDER = "./Dataset/Audios";
+    public static final Integer NEIGHBORHOOD_SIZE = 3;
+    public static final Double FRAME_DIFFERENCE_THRESHOLD = 1e7;
+    public static final Integer FRAME_TO_CHECK = 90;
+    public static final Integer FALSE_POSITIVE_IN_FRAME_TO_CHECK = 5;
 
     /**
-     * Read the preprocessed files and return the rgb values
+     * Read the preprocessed files and return the rgb values of each frame
+     *
      * @param fileName name of the file
-     * @return sum of all r, g, b values in each frame 
+     * @return sum of all r, g, b values in each frame
      * @throws IOException
      */
     private static int[][] readPreProcessedFiles(String fileName) throws IOException {
@@ -40,9 +49,10 @@ public class Main {
 
     /**
      * Compare two windows of rgb values
+     *
      * @param preprocessedVideo sum of r, g, and b values of the preprocessed video in each frame
-     * @param queryVideo sum of r, g, and b values of the query video in each frame
-     * @param start starting frame of the window
+     * @param queryVideo        sum of r, g, and b values of the query video in each frame
+     * @param start             starting frame of the window
      * @return absolute difference between the two windows
      */
     private static double compareTwoWindow(int[][] preprocessedVideo, int[][] queryVideo, int start) {
@@ -57,44 +67,187 @@ public class Main {
 
     /**
      * Find the best match of the query video in the preprocessed videos
-     * @param queryVideo sum of r, g, and b values of the query video in each frame
+     *
+     * @param rgbQueryVideo sum of r, g, and b values of the query video in each frame
+     * @param topKMatches   top k best matches
      * @throws IOException
      */
-    private static int[] findBestMatch(int[][] queryVideo, File[] files) throws IOException {
+    private static int[] findBestMatchFromTopK(int[][][][] rgbQueryVideo, int[][] topKMatches, File[] files, String inputQueryAudio) throws IOException, UnsupportedAudioFileException {
+        int[] ans = new int[2];
+        Arrays.fill(ans, -1);
         double minDiff = Double.MAX_VALUE;
-        int minI = -1, minJ = -1;
+        for (int[] topKMatch : topKMatches) {
+            // get the file name and starting frame of the dataset video
+            String fileName = files[topKMatch[0]].getName().substring(0, files[topKMatch[0]].getName().length() - 4);
+            int startFrame = topKMatch[1];
+
+            // open video from the dataset and set the starting frame
+            av_log_set_level(AV_LOG_PANIC);
+            FrameGrabber grabber = new FFmpegFrameGrabber(VIDEO_FOLDER + "/" + fileName + ".mp4");
+            grabber.start();
+            grabber.setFrameNumber(startFrame - 1);
+            OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
+
+            double diff = 0;
+            int frameNumber = startFrame, counter = 0;
+            Deque<Double> deque = new ArrayDeque<>();
+            while (true) {
+                Frame frame = grabber.grab();
+                if (frame == null) {
+                    break;
+                }
+                Mat mat = converter.convert(frame);
+                if (mat == null) {
+                    continue;
+                }
+                if (frameNumber >= startFrame + rgbQueryVideo[0].length) {
+                    break;
+                }
+
+                // get R, G, B values of each frame
+                UByteRawIndexer indexer = mat.createIndexer();
+                int[][] r = new int[HEIGHT][WIDTH];
+                int[][] g = new int[HEIGHT][WIDTH];
+                int[][] b = new int[HEIGHT][WIDTH];
+                for (int i = 0; i < HEIGHT; i++) {
+                    for (int j = 0; j < WIDTH; j++) {
+                        b[i][j] = indexer.get(i, j, 0);
+                        g[i][j] = indexer.get(i, j, 1);
+                        r[i][j] = indexer.get(i, j, 2);
+                    }
+                }
+
+                // compare the two windows pixel by pixel
+                double local_diff = 0;
+                for (int j = 0; j < HEIGHT; j++) {
+                    for (int k = 0; k < WIDTH; k++) {
+                        local_diff += Math.abs(rgbQueryVideo[0][frameNumber - startFrame][j][k] - r[j][k]);
+                        local_diff += Math.abs(rgbQueryVideo[1][frameNumber - startFrame][j][k] - g[j][k]);
+                        local_diff += Math.abs(rgbQueryVideo[2][frameNumber - startFrame][j][k] - b[j][k]);
+                    }
+                }
+                diff += local_diff;
+                frameNumber++;
+
+                // if we check frame by frame pixel difference, we will make sure that, at any point of time,
+                // last FRAME_TO_CHECK - FALSE_POSITIVE_IN_FRAME_TO_CHECK out of FRAME_TO_CHECK frames have at most
+                // FRAME_DIFFERENCE_THRESHOLD difference. If we have more than that, we can safely assume
+                // that the video is not a match
+                if (local_diff >= FRAME_DIFFERENCE_THRESHOLD) {
+                    counter += 1;
+                }
+                deque.addLast(local_diff);
+                if (deque.size() >= FRAME_TO_CHECK) {
+                    double first = deque.pollFirst();
+                    if (first >= FRAME_DIFFERENCE_THRESHOLD) {
+                        counter -= 1;
+                    }
+                }
+                if (counter > FRAME_TO_CHECK - FALSE_POSITIVE_IN_FRAME_TO_CHECK) {
+                    diff = Double.MAX_VALUE;
+                    break;
+                }
+            }
+            grabber.stop();
+
+            // System.out.println("Video: " + fileName + " with diff " + diff + " at " + startFrame);
+            // String datasetAudio = AUDIO_FOLDER + "/" + fileName + ".wav";
+            // double audioDiff = AudioComparator.compareAudioFiles(inputQueryAudio, datasetAudio,
+            // startFrame);
+            // System.out.println("Audio diff: " + audioDiff);
+
+            if (diff < minDiff) {
+                minDiff = diff;
+                ans[0] = topKMatch[0];
+                ans[1] = topKMatch[1];
+            }
+        }
+        return ans;
+    }
+
+    /**
+     * Find the top k best matches of the query video in the preprocessed videos
+     *
+     * @param queryVideo sum of r, g, and b values of the query video in each frame
+     * @param files      list of preprocessed files
+     * @param k          number of best matches to return
+     * @throws IOException
+     */
+    private static int[][] findBestMatch(int[][] queryVideo, File[] files, int k) throws IOException {
+        PriorityQueue<double[]> pQueue = new PriorityQueue<>(Collections.reverseOrder((a, b) -> Double.compare(a[0], b[0])));
         for (int i = 0; i < files.length; i++) {
             File file = files[i];
+            int minJ = -1;
+            double minDiffPerVideo = Double.MAX_VALUE;
             if (file.isFile() && file.getName().endsWith(".txt")) {
                 int[][] preprocessedVideo = readPreProcessedFiles(file.getPath());
                 for (int j = 0; j <= preprocessedVideo.length - queryVideo.length; j++) {
                     double diff = compareTwoWindow(preprocessedVideo, queryVideo, j);
-                    if (diff < minDiff) {
-                        minDiff = diff;
-                        minI = i;
+                    if (minDiffPerVideo > diff) {
+                        minDiffPerVideo = diff;
                         minJ = j;
                     }
                 }
             }
+            if (pQueue.size() < k) {
+                pQueue.add(new double[]{minDiffPerVideo, i, minJ});
+            } else if (!pQueue.isEmpty() && pQueue.peek()[0] > minDiffPerVideo) {
+                pQueue.poll();
+                pQueue.add(new double[]{minDiffPerVideo, i, minJ});
+            }
         }
-        return new int[]{minI, minJ};
+
+        int[][] topKMatches = new int[k][2];
+        while (!pQueue.isEmpty()) {
+            double[] curr = pQueue.poll();
+            topKMatches[pQueue.size()] = new int[]{(int) curr[1], (int) curr[2]};
+        }
+        return topKMatches;
     }
 
     /**
-     * Get the sum of r, g, and b values of each frame in the query video
-     * @param path path to the video
-     * @return sum of r, g, and b values of each frame in the query video
+     * Pass through a low pass filter
+     *
+     * @param channel channel to pass through the low pass filter
+     * @return channel after passing through the low pass filter
+     */
+    private static int[][] passThroughLowPass(int[][] channel) {
+        int[][] newChannel = new int[channel.length][channel[0].length];
+        for (int i = 0; i < HEIGHT; i++) {
+            for (int j = 0; j < WIDTH; j++) {
+                int sum = 0, count = 0, offset = (int) NEIGHBORHOOD_SIZE / 2;
+                for (int k = i - offset; k <= i + offset; k++) {
+                    for (int l = j - offset; l <= j + offset; l++) {
+                        if (k >= 0 && k < HEIGHT && l >= 0 && l < WIDTH) {
+                            sum += channel[k][l];
+                            count++;
+                        }
+                    }
+                }
+                newChannel[i][j] = sum / count;
+            }
+        }
+        return newChannel;
+    }
+
+    /**
+     * Get the rgb values of each frame of the video
+     *
+     * @param path    path to the video
+     * @param lowPass whether to pass through a low pass filter
+     * @return rgb values of each frame of the video
      * @throws FrameGrabber.Exception
      */
-    private static int[][] getSumRGB(String path) throws FrameGrabber.Exception {
+    private static int[][][][] getVideoRGBPerFrame(String path, Boolean lowPass) throws FrameGrabber.Exception {
         av_log_set_level(AV_LOG_PANIC);
         FrameGrabber grabber = new FFmpegFrameGrabber(path);
         grabber.setOption("input_format_options", "hide_banner");
         grabber.start();
         OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
-        int [][] rgbSums = new int[grabber.getLengthInFrames()][3];
-        int frameNumber = 0;
+        int[][][][] rgb = new int[3][grabber.getLengthInFrames()][HEIGHT][WIDTH];
 
+        grabber.setFrameRate(30);
+        int frameNumber = 0;
         while (true) {
             Frame frame = grabber.grab();
             if (frame == null) {
@@ -104,52 +257,92 @@ public class Main {
             if (mat == null) {
                 continue;
             }
+
+            // get the rgb values of each frame
             UByteRawIndexer indexer = mat.createIndexer();
-            int sumR = 0, sumG = 0, sumB = 0;
+            int[][] r = new int[HEIGHT][WIDTH];
+            int[][] g = new int[HEIGHT][WIDTH];
+            int[][] b = new int[HEIGHT][WIDTH];
             for (int i = 0; i < HEIGHT; i++) {
                 for (int j = 0; j < WIDTH; j++) {
-                    int b = indexer.get(i, j, 0);
-                    int g = indexer.get(i, j, 1);
-                    int r = indexer.get(i, j, 2);
-                    sumR += r;
-                    sumG += g;
-                    sumB += b;
+                    b[i][j] = indexer.get(i, j, 0);
+                    g[i][j] = indexer.get(i, j, 1);
+                    r[i][j] = indexer.get(i, j, 2);
                 }
             }
-            rgbSums[frameNumber][0] = sumR;
-            rgbSums[frameNumber][1] = sumG;
-            rgbSums[frameNumber][2] = sumB;
+
+            // pass through a low pass filter
+            if (lowPass) {
+                b = passThroughLowPass(b);
+                g = passThroughLowPass(g);
+                r = passThroughLowPass(r);
+            }
+
+            // store the rgb values for future use
+            rgb[0][frameNumber] = r;
+            rgb[1][frameNumber] = g;
+            rgb[2][frameNumber] = b;
             frameNumber++;
         }
         grabber.stop();
+        return rgb;
+    }
+
+    private static int[][] getSumRGB(int[][][][] rgbVideo) {
+        int[][] rgbSums = new int[rgbVideo[0].length][3];
+        for (int i = 0; i < rgbVideo[0].length; i++) {
+            for (int j = 0; j < HEIGHT; j++) {
+                for (int k = 0; k < WIDTH; k++) {
+                    rgbSums[i][0] += rgbVideo[0][i][j][k];
+                    rgbSums[i][1] += rgbVideo[1][i][j][k];
+                    rgbSums[i][2] += rgbVideo[2][i][j][k];
+                }
+            }
+        }
         return rgbSums;
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException {
-        if (args.length > 2 || args.length < 1) {
-            System.err.println("java VideoPlayer <rgbFile> <wavFile> or java VideoPlayer <mp4File>");
+    public static void main(String[] args) throws IOException, UnsupportedAudioFileException, InterruptedException {
+        if (args.length < 3) {
+            System.err.println("java VideoPlayer <mp4File> <smoothing> <k>");
             return;
         }
 
-        // begin processing
-        String fileName = args[0].substring(args[0].lastIndexOf("/") + 1);
-        System.out.println("Processing: " + fileName);
+        // get the input arguments
+        String inputQueryVideo = args[0];
+        String inputQueryAudio = args[1];
+        Boolean lowPass = args[2].equals("1");
+        int k = Integer.parseInt(args[3]);
+        String fileName = inputQueryVideo.substring(inputQueryVideo.lastIndexOf("/") + 1);
 
-        // main driver code
+        // begin processing
         long startTime = System.currentTimeMillis();
+        System.out.println("Processing: " + fileName);
         File folder = new File(PREPROCESSED_FOLDER);
+        if (lowPass) {
+            folder = new File(PREPROCESSED_FOLDER_LOW_PASS);
+        }
         File[] files = folder.listFiles();
-        int[][] rgbSums = getSumRGB(args[0]);
-        int[] ans = findBestMatch(rgbSums, files);
+        int[][][][] rgbQueryVideo = getVideoRGBPerFrame(inputQueryVideo, lowPass);
+        int[][] rgbSums = getSumRGB(rgbQueryVideo);
+        int[][] topKMatches = findBestMatch(rgbSums, files, k);
+        if (lowPass) {
+            rgbQueryVideo = getVideoRGBPerFrame(inputQueryVideo, false);
+        }
+        int[] ans = findBestMatchFromTopK(rgbQueryVideo, topKMatches, files, inputQueryAudio);
         long endTime = System.currentTimeMillis();
 
         // end processing
+        if (ans[0] == -1) {
+            System.out.println("No match found");
+            return;
+        }
         String matchVideoName = files[ans[0]].getName().substring(0, files[ans[0]].getName().length() - 4);
         System.out.println("Best match: " + matchVideoName + " at frame " + ans[1]);
         System.out.println("Finished processing " + fileName + " in " + (endTime - startTime) + " ms");
 
         // play the video
-        String command = "python3 video_player.py " + VIDEO_FOLDER + "/" + matchVideoName  + ".mp4 " + ans[1];
+        String command = "python3 video_player.py " + VIDEO_FOLDER + "/" + matchVideoName + ".mp4 " + ans[1];
         Process p = Runtime.getRuntime().exec(command);
         int exitCode = p.waitFor();
     }

@@ -47,12 +47,8 @@
                 </executions>
                 <configuration>
                     <mainClass>Main</mainClass>
-                    <arguments>
-                        <argument>./Dataset/Queries/video1_1.mp4</argument>
-                    </arguments>
                 </configuration>
             </plugin>
         </plugins>
     </build>
-
 </project>
