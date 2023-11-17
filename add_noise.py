@@ -13,8 +13,6 @@ def process_frame(frame):
 
 def add_noise_to_video(input_video_path, output_video_path):
     clip = mp.VideoFileClip(input_video_path)
-
-    # Process each frame while keeping the original audio
     processed_clip = clip.fl_image(process_frame)
     processed_clip.write_videofile(output_video_path, codec='libx264', audio_codec='aac')
 
@@ -48,10 +46,8 @@ add_noise_to_video(input_video_path, output_video_path)
 #         if not ret:
 #             break
 
-#         # Add Gaussian noise to each frame
 #         noisy_frame = add_gaussian_noise(frame)
 
-#         # Write the noisy frame to the output video
 #         out.write(noisy_frame)
 
 #         cv2.imshow('Noisy Video', noisy_frame)
