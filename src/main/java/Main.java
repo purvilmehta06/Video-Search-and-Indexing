@@ -39,6 +39,24 @@ public class Main {
     }
 
     /**
+     * Calculate PSNR between two frames
+     */
+    private static double calculatePSNR(int[][][] original, int[][][] compressed) {
+        double mse = 0;
+        for (int y = 0; y < HEIGHT; y++) {
+            for (int x = 0; x < WIDTH; x++) {
+                for (int channel = 0; channel < 3; channel++) {
+                    int diff = original[x][y][channel] - compressed[x][y][channel];
+                    mse += diff * diff;
+                }
+            }
+        }
+        mse /= (3.0 * WIDTH * HEIGHT); // 3 channels (RGB)
+        double maxPixelValue = 255.0;
+        return 20 * Math.log10(maxPixelValue / Math.sqrt(mse));
+    }
+
+    /**
      * Compare two windows of rgb values
      * @param preprocessedVideo sum of r, g, and b values of the preprocessed video in each frame
      * @param queryVideo sum of r, g, and b values of the query video in each frame
@@ -78,6 +96,45 @@ public class Main {
             }
         }
         return new int[]{minI, minJ};
+    }
+
+    /**
+     * Get the sum of r, g, and b values of each frame in the query video
+     * @param path path to the video
+     * @return sum of r, g, and b values of each frame in the query video
+     * @throws FrameGrabber.Exception
+     */
+    private static int[][][][] getRGBFrames(String path) throws FrameGrabber.Exception {
+        av_log_set_level(AV_LOG_PANIC);
+        FrameGrabber grabber = new FFmpegFrameGrabber(path);
+        grabber.setOption("input_format_options", "hide_banner");
+        grabber.start();
+        OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
+        int [][][][] rgbMatrices = new int[grabber.getLengthInFrames()][HEIGHT][WIDTH][3];
+        int frameNumber = 0;
+
+        while (true) {
+            Frame frame = grabber.grab();
+            if (frame == null) {
+                break;
+            }
+            Mat mat = converter.convert(frame);
+            if (mat == null) {
+                continue;
+            }
+            UByteRawIndexer indexer = mat.createIndexer();
+            for (int i = 0; i < HEIGHT; i++) {
+                for (int j = 0; j < WIDTH; j++) {
+                    for (int k = 0; k < 3; k++) {
+                        // b, g, r
+                        rgbMatrices[frameNumber][i][j][k] = indexer.get(i, j, k);
+                    }
+                }
+            }
+            frameNumber++;
+        }
+        grabber.stop();
+        return rgbMatrices;
     }
 
     /**
@@ -139,6 +196,10 @@ public class Main {
         long startTime = System.currentTimeMillis();
         File folder = new File(PREPROCESSED_FOLDER);
         File[] files = folder.listFiles();
+
+//        int[][][][] rgbMatrices = getRGBFrames(args[0]);
+//        int[] ans = findBestMatchWithPSNR(rgbMatrices);
+
         int[][] rgbSums = getSumRGB(args[0]);
         int[] ans = findBestMatch(rgbSums, files);
         long endTime = System.currentTimeMillis();
