@@ -2,6 +2,7 @@ import java.io.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.*;
 
 import org.bytedeco.opencv.opencv_core.*;
@@ -13,6 +14,9 @@ import org.bytedeco.javacpp.indexer.UByteRawIndexer;
 
 import static org.bytedeco.ffmpeg.global.avutil.AV_LOG_PANIC;
 import static org.bytedeco.ffmpeg.global.avutil.av_log_set_level;
+
+import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FileUtils;
 
 public class Main {
 
@@ -130,27 +134,82 @@ public class Main {
             System.err.println("java VideoPlayer <rgbFile> <wavFile> or java VideoPlayer <mp4File>");
             return;
         }
+        compareVideos();
 
         // begin processing
-        String fileName = args[0].substring(args[0].lastIndexOf("/") + 1);
-        System.out.println("Processing: " + fileName);
+//        String fileName = args[0].substring(args[0].lastIndexOf("/") + 1);
+//        System.out.println("Processing: " + fileName);
+//
+//        // main driver code
+//        long startTime = System.currentTimeMillis();
+//        File folder = new File(PREPROCESSED_FOLDER);
+//        File[] files = folder.listFiles();
+//        int[][] rgbSums = getSumRGB(args[0]);
+//        int[] ans = findBestMatch(rgbSums, files);
+//        long endTime = System.currentTimeMillis();
+//
+//        // end processing
+//        String matchVideoName = files[ans[0]].getName().substring(0, files[ans[0]].getName().length() - 4);
+//        System.out.println("Best match: " + matchVideoName + " at frame " + ans[1]);
+//        System.out.println("Finished processing " + fileName + " in " + (endTime - startTime) + " ms");
+//
+//        // play the video
+//        String command = "python3 video_player.py " + VIDEO_FOLDER + "/" + matchVideoName  + ".mp4 " + ans[1];
+//        Process p = Runtime.getRuntime().exec(command);
+//        int exitCode = p.waitFor();
+    }
 
-        // main driver code
-        long startTime = System.currentTimeMillis();
-        File folder = new File(PREPROCESSED_FOLDER);
-        File[] files = folder.listFiles();
-        int[][] rgbSums = getSumRGB(args[0]);
-        int[] ans = findBestMatch(rgbSums, files);
-        long endTime = System.currentTimeMillis();
 
-        // end processing
-        String matchVideoName = files[ans[0]].getName().substring(0, files[ans[0]].getName().length() - 4);
-        System.out.println("Best match: " + matchVideoName + " at frame " + ans[1]);
-        System.out.println("Finished processing " + fileName + " in " + (endTime - startTime) + " ms");
+    private static void compareVideos() {
+        String videoFilePath = "Dataset/Queries/video8_1.mp4";
+        try {
+            File videoFile = new File(videoFilePath);
 
-        // play the video
-        String command = "python3 video_player.py " + VIDEO_FOLDER + "/" + matchVideoName  + ".mp4 " + ans[1];
-        Process p = Runtime.getRuntime().exec(command);
-        int exitCode = p.waitFor();
+            // Calculate MD5 hash of the entire video file
+            String fileHash = calculateFileHash(videoFile);
+            System.out.println("File Hash: " + fileHash);
+
+            // Check for any embedded signatures or unique identifiers
+            boolean hasEmbeddedSignatures = checkForEmbeddedSignatures(videoFile);
+            System.out.println("Has Embedded Signatures: " + hasEmbeddedSignatures);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static String calculateFileHash(File file) throws IOException {
+        try {
+            return DigestUtils.md5Hex(FileUtils.readFileToByteArray(file));
+        } catch (IOException e) {
+            throw new IOException("Error calculating file hash", e);
+        }
+    }
+
+    private static boolean checkForEmbeddedSignatures(File videoFile) throws IOException {
+        // Example: Check for a specific pattern or identifier in the video file
+        byte[] signaturePattern = "MY_UNIQUE_IDENTIFIER".getBytes();
+
+        // Read the contents of the video file
+        byte[] fileBytes = Files.readAllBytes(videoFile.toPath());
+
+        // Check if the signature pattern is present in the file
+        return containsSignature(fileBytes, signaturePattern);
+    }
+
+    private static boolean containsSignature(byte[] fileBytes, byte[] signaturePattern) {
+        for (int i = 0; i <= fileBytes.length - signaturePattern.length; i++) {
+            boolean match = true;
+            for (int j = 0; j < signaturePattern.length; j++) {
+                if (fileBytes[i + j] != signaturePattern[j]) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) {
+                return true;
+            }
+        }
+        return false;
     }
 }
