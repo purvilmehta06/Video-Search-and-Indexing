@@ -2,7 +2,7 @@ import cv2
 import moviepy.editor as mp
 import numpy as np
 
-def add_gaussian_noise(image, mean=0, sigma=2):
+def add_gaussian_noise(image, mean=10, sigma=30):
     row, col, ch = image.shape
     gauss = np.random.normal(mean, sigma, (row, col, ch))
     noisy = np.clip(image + gauss, 0, 255)
@@ -17,7 +17,7 @@ def add_noise_to_video(input_video_path, output_video_path):
     processed_clip.write_videofile(output_video_path, codec='libx264', audio_codec='aac')
 
 input_video_path = 'Dataset/Videos/video1.mp4'
-output_video_path = 'Dataset/Generated/video1_4.mp4'
+output_video_path = 'Dataset/Generated/video1_10_30.mp4'
 add_noise_to_video(input_video_path, output_video_path)
 
 # import cv2
