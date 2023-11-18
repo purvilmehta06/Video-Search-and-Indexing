@@ -1,8 +1,23 @@
-import cv2
 import moviepy.editor as mp
+import random
+import os
 import numpy as np
 
-def add_gaussian_noise(image, mean=10, sigma=30):
+def get_fps(input_video_path):
+    clip = mp.VideoFileClip(input_video_path)
+    fps = clip.fps
+    clip.close()
+    return fps
+
+def clip_random_10_seconds(input_video_path, output_video_path, query_video_length):
+    clip = mp.VideoFileClip(input_video_path)
+    video_duration = clip.duration
+    start_time = random.uniform(0, video_duration - query_video_length)
+    print(start_time)
+    clipped_clip = clip.subclip(start_time, start_time + query_video_length)
+    clipped_clip.write_videofile(output_video_path, codec='libx264', audio_codec='aac')
+
+def add_gaussian_noise(image):
     row, col, ch = image.shape
     gauss = np.random.normal(mean, sigma, (row, col, ch))
     noisy = np.clip(image + gauss, 0, 255)
@@ -16,48 +31,28 @@ def add_noise_to_video(input_video_path, output_video_path):
     processed_clip = clip.fl_image(process_frame)
     processed_clip.write_videofile(output_video_path, codec='libx264', audio_codec='aac')
 
+mean = 0
+sigma = 5
+count = 0
+query_video_length = 10
+
 input_video_path = 'Dataset/Videos/video1.mp4'
-output_video_path = 'Dataset/Generated/video1_10_30.mp4'
-add_noise_to_video(input_video_path, output_video_path)
+initial_name = input_video_path[:-4]
+output_video_path = initial_name + str(mean) + '_' + str(sigma) + '.mp4'
+if not os.path.exists(output_video_path):    
+    add_noise_to_video(input_video_path, output_video_path)
+else:
+    print("Video with mean and sigma exists")
 
-# import cv2
-# import numpy as np
-
-# def add_gaussian_noise(image, mean=0, sigma=25):
-#     row, col, ch = image.shape
-#     gauss = np.random.normal(mean, sigma, (row, col, ch))
-#     noisy = np.clip(image + gauss, 0, 255)
-#     return noisy.astype(np.uint8)
-
-# def add_noise_to_video(input_video_path, output_video_path):
-#     cap = cv2.VideoCapture(input_video_path)
-#     fps = int(cap.get(cv2.CAP_PROP_FPS))
-#     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-#     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-#     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-#     out = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
-
-#     random_seed = 42  # Set a random seed for reproducibility
-#     np.random.seed(random_seed)
-
-#     while True:
-#         ret, frame = cap.read()
-#         if not ret:
-#             break
-
-#         noisy_frame = add_gaussian_noise(frame)
-
-#         out.write(noisy_frame)
-
-#         cv2.imshow('Noisy Video', noisy_frame)
-#         if cv2.waitKey(25) & 0xFF == ord('q'):
-#             break
-
-#     cap.release()
-#     out.release()
-#     cv2.destroyAllWindows()
-
-# input_video_path = 'Dataset/Videos/video1.mp4'
-# output_video_path = 'Dataset/Generated/video1_2.mp4'
-# add_noise_to_video(input_video_path, output_video_path)
+input_video_path = output_video_path
+fps = get_fps(input_video_path)
+print("FPS of output file: ", fps)
+if (fps == 30.0):
+    output_video_path = initial_name + str(mean) + '_' + str(sigma) + '_' + str(count) + '.mp4'
+    if not os.path.exists(output_video_path):
+        clip_random_seconds(input_video_path, output_video_path, query_video_length)
+        print("Clip video created")
+    else:
+        print("Clip video exists")
+else:
+    print("Not creating clip as fps is less")
