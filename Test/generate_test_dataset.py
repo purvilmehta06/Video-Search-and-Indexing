@@ -9,7 +9,7 @@ import io
 @contextlib.contextmanager
 def suppress_moviepy_output():
     original_stdout = sys.stdout
-    sys.stdout = io.StringIO()  # Redirect stdout to an in-memory buffer
+    sys.stdout = io.StringIO()
     try:
         yield
     finally:
@@ -56,7 +56,9 @@ elif (len(sys.argv) == 2):
     mean = sys.argv[1]
 
 folder_path = "../Dataset/Videos"
+
 for video_file in os.listdir(folder_path):
+    
     if video_file.endswith(".mp4"):
         
         print("Processing video: ", video_file)

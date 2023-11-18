@@ -2,3 +2,4 @@
 target/*
 Dataset/*
 ./idea/name
+.idea
