@@ -3,12 +3,6 @@ import random
 import os
 import numpy as np
 
-def get_fps(input_video_path):
-    clip = mp.VideoFileClip(input_video_path)
-    fps = clip.fps
-    clip.close()
-    return fps
-
 def get_video_duration(input_video_path):
     clip = mp.VideoFileClip(input_video_path)
     return clip.duration
@@ -39,6 +33,7 @@ query_video_length = 10
 folder_path = "../Dataset/Videos"
 for video_file in os.listdir(folder_path):
     if video_file.endswith(".mp4"):
+        print("Processing video: ", video_file)
         input_video_path = folder_path + "/" + video_file
         video_name = video_file[:-4]
         
@@ -56,7 +51,6 @@ for video_file in os.listdir(folder_path):
 
         input_video_path = output_video_path
         output_video_path = "../Dataset/NoiseQuery/" + video_name + '_' + str(mean) + '_' + str(sigma) + '_' + str(frame_number) + '.mp4'
-
 
         if not os.path.exists(output_video_path):    
             add_noise_to_video(input_video_path, output_video_path)
