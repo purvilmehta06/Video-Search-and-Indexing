@@ -105,7 +105,7 @@ if __name__ == "__main__":
     start_frame = int(sys.argv[2])
 
     app = QApplication(sys.argv)
-    player = VideoPlayer(file_name, int(start_frame * 1000 / 30))
+    player = VideoPlayer(file_name, round(start_frame * 1000 / 30))
     player.setWindowTitle("Video Player")
     player.resize(600, 400)
     player.show()

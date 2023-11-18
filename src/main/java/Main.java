@@ -41,7 +41,7 @@ public class Main {
         BufferedReader reader = new BufferedReader(new FileReader(fileName));
         String line;
         while ((line = reader.readLine()) != null) {
-            String[] rbg = line.split(", ");
+            String[] rbg = line.split(" ");
             rgbSums.add(new int[]{Integer.parseInt(rbg[0]), Integer.parseInt(rbg[1]), Integer.parseInt(rbg[2])});
         }
         return rgbSums.toArray(new int[rgbSums.size()][]);
@@ -150,7 +150,7 @@ public class Main {
             }
             grabber.stop();
 
-            // System.out.println("Video: " + fileName + " with diff " + diff + " at " + startFrame);
+             System.out.println("Video: " + fileName + " with diff " + diff + " at " + startFrame);
             // String datasetAudio = AUDIO_FOLDER + "/" + fileName + ".wav";
             // double audioDiff = AudioComparator.compareAudioFiles(inputQueryAudio, datasetAudio,
             // startFrame);
@@ -183,23 +183,20 @@ public class Main {
                 int[][] preprocessedVideo = readPreProcessedFiles(file.getPath());
                 for (int j = 0; j <= preprocessedVideo.length - queryVideo.length; j++) {
                     double diff = compareTwoWindow(preprocessedVideo, queryVideo, j);
-                    if (minDiffPerVideo > diff) {
-                        minDiffPerVideo = diff;
-                        minJ = j;
+                    if (pQueue.size() < k) {
+                        pQueue.add(new double[]{diff, i, j});
+                    } else if (!pQueue.isEmpty() && pQueue.peek()[0] > diff) {
+                        pQueue.poll();
+                        pQueue.add(new double[]{diff, i, j});
                     }
                 }
-            }
-            if (pQueue.size() < k) {
-                pQueue.add(new double[]{minDiffPerVideo, i, minJ});
-            } else if (!pQueue.isEmpty() && pQueue.peek()[0] > minDiffPerVideo) {
-                pQueue.poll();
-                pQueue.add(new double[]{minDiffPerVideo, i, minJ});
             }
         }
 
         int[][] topKMatches = new int[k][2];
         while (!pQueue.isEmpty()) {
             double[] curr = pQueue.poll();
+            System.out.println("Video: " + files[(int) curr[1]].getName() + " with diff " + curr[0] + " at " + curr[2]);
             topKMatches[pQueue.size()] = new int[]{(int) curr[1], (int) curr[2]};
         }
         return topKMatches;
@@ -344,6 +341,6 @@ public class Main {
         // play the video
         String command = "python3 video_player.py " + VIDEO_FOLDER + "/" + matchVideoName + ".mp4 " + ans[1];
         Process p = Runtime.getRuntime().exec(command);
-        int exitCode = p.waitFor();
+        p.waitFor();
     }
 }
