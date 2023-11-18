@@ -36,29 +36,29 @@ mean = 0
 sigma = 5
 query_video_length = 10
 
-input_video_path = 'Dataset/Videos/video1.mp4'
-initial_name = input_video_path[:-4]
-output_video_path = initial_name  + '_' + str(mean) + '_' + str(sigma) + '.mp4'
-if not os.path.exists(output_video_path):    
-    add_noise_to_video(input_video_path, output_video_path)
-else:
-    print("Video with mean and sigma exists")
+folder_path = "../Dataset/Videos"
+for video_file in os.listdir(folder_path):
+    if video_file.endswith(".mp4"):
+        input_video_path = folder_path + "/" + video_file
+        video_name = video_file[:-4]
+        
+        video_duration = get_video_duration(input_video_path)
+        start_time = random.uniform(0, video_duration - query_video_length)
+        frame_number = int(start_time*30)
+
+        output_video_path = "../Dataset/Clips/" + video_name + '_' + str(frame_number) + '.mp4'
+
+        if not os.path.exists(output_video_path):
+            clip_random_seconds(input_video_path, output_video_path, query_video_length, start_time)
+            print("Clip created")
+        else:
+            print("Clip exists")
+
+        input_video_path = output_video_path
+        output_video_path = "../Dataset/NoiseQuery/" + video_name + '_' + str(mean) + '_' + str(sigma) + '_' + str(frame_number) + '.mp4'
 
 
-input_video_path = output_video_path
-video_duration = get_video_duration(input_video_path)
-start_time = random.uniform(0, video_duration - query_video_length)
-frame_number = int(start_time*30)
-
-fps = get_fps(input_video_path)
-print("FPS of output file: ", fps)
-
-if (fps == 30.0):
-    output_video_path = initial_name + '_' + str(mean) + '_' + str(sigma) + '_' + str(frame_number) + '.mp4'
-    if not os.path.exists(output_video_path):
-        clip_random_seconds(input_video_path, output_video_path, query_video_length, start_time)
-        print("Clip video created")
-    else:
-        print("Clip video exists for frame number: ", frame_number)
-else:
-    print("Not creating clip as fps is less")
+        if not os.path.exists(output_video_path):    
+            add_noise_to_video(input_video_path, output_video_path)
+        else:
+            print("Clipped video with mean and sigma exists")
