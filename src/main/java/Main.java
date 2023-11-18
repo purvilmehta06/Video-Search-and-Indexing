@@ -34,7 +34,6 @@ public class Main {
      *
      * @param fileName name of the file
      * @return sum of all r, g, b values in each frame
-     * @throws IOException
      */
     private static int[][] readPreProcessedFiles(String fileName) throws IOException {
         ArrayList<int[]> rgbSums = new ArrayList<>();
@@ -70,7 +69,6 @@ public class Main {
      *
      * @param rgbQueryVideo sum of r, g, and b values of the query video in each frame
      * @param topKMatches   top k best matches
-     * @throws IOException
      */
     private static int[] findBestMatchFromTopK(int[][][][] rgbQueryVideo, int[][] topKMatches, File[] files, String inputQueryAudio) throws IOException, UnsupportedAudioFileException {
         int[] ans = new int[2];
@@ -150,12 +148,7 @@ public class Main {
             }
             grabber.stop();
 
-             System.out.println("Video: " + fileName + " with diff " + diff + " at " + startFrame);
-            // String datasetAudio = AUDIO_FOLDER + "/" + fileName + ".wav";
-            // double audioDiff = AudioComparator.compareAudioFiles(inputQueryAudio, datasetAudio,
-            // startFrame);
-            // System.out.println("Audio diff: " + audioDiff);
-
+            System.out.println("Video: " + fileName + " with diff " + diff + " at " + startFrame);
             if (diff < minDiff) {
                 minDiff = diff;
                 ans[0] = topKMatch[0];
@@ -171,14 +164,11 @@ public class Main {
      * @param queryVideo sum of r, g, and b values of the query video in each frame
      * @param files      list of preprocessed files
      * @param k          number of best matches to return
-     * @throws IOException
      */
     private static int[][] findBestMatch(int[][] queryVideo, File[] files, int k) throws IOException {
         PriorityQueue<double[]> pQueue = new PriorityQueue<>(Collections.reverseOrder((a, b) -> Double.compare(a[0], b[0])));
         for (int i = 0; i < files.length; i++) {
             File file = files[i];
-            int minJ = -1;
-            double minDiffPerVideo = Double.MAX_VALUE;
             if (file.isFile() && file.getName().endsWith(".txt")) {
                 int[][] preprocessedVideo = readPreProcessedFiles(file.getPath());
                 for (int j = 0; j <= preprocessedVideo.length - queryVideo.length; j++) {
@@ -212,7 +202,7 @@ public class Main {
         int[][] newChannel = new int[channel.length][channel[0].length];
         for (int i = 0; i < HEIGHT; i++) {
             for (int j = 0; j < WIDTH; j++) {
-                int sum = 0, count = 0, offset = (int) NEIGHBORHOOD_SIZE / 2;
+                int sum = 0, count = 0, offset = NEIGHBORHOOD_SIZE / 2;
                 for (int k = i - offset; k <= i + offset; k++) {
                     for (int l = j - offset; l <= j + offset; l++) {
                         if (k >= 0 && k < HEIGHT && l >= 0 && l < WIDTH) {
@@ -233,7 +223,6 @@ public class Main {
      * @param path    path to the video
      * @param lowPass whether to pass through a low pass filter
      * @return rgb values of each frame of the video
-     * @throws FrameGrabber.Exception
      */
     private static int[][][][] getVideoRGBPerFrame(String path, Boolean lowPass) throws FrameGrabber.Exception {
         av_log_set_level(AV_LOG_PANIC);
