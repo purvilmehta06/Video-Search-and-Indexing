@@ -9,8 +9,5 @@
         <module name="VideoPlayer" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="Video-Search-and-Indexing" target="16" />
-    </bytecodeTargetLevel>
   </component>
 </project>
