@@ -2,6 +2,5 @@
 target/*
 Dataset/*
 ./idea/name
-mvn_install.log
 Logs/*
 VideoPlayer.iml
