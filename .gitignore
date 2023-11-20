@@ -5,3 +5,4 @@ Dataset/*
 .idea
 mvn_install.log
 Logs/*
+VideoPlayer.iml
