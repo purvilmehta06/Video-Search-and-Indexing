@@ -1,14 +1,14 @@
 #Generate Noise Videos
-#cd Test
-#for i in {0..5}
-#do
-#  for j in {10..20}
-#  do
-#    python3 generate_test_dataset.py 0 $i $j
-#  done
-#done
-#
-#cd ..
+cd Test
+for i in {0..5}
+do
+  for j in {10..20}
+  do
+    python3 generate_test_dataset.py 0 $i $j
+  done
+done
+
+cd ..
 
 # installing all the dependencies
 echo "Installing all the dependencies..."
