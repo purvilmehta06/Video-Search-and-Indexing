@@ -1,3 +1,6 @@
 .DS_Store
 target/*
 Dataset/*
+./idea/name
+Logs/*
+VideoPlayer.iml
