@@ -5,6 +5,7 @@ import numpy as np
 import sys
 import contextlib
 import io
+import math
 
 @contextlib.contextmanager
 def suppress_moviepy_output():
@@ -66,9 +67,9 @@ for video_file in os.listdir(folder_path):
         input_video_path = folder_path + "/" + video_file
         video_name = video_file[:-4]
         
-        video_duration = get_video_duration(input_video_path)
-        start_time = random.uniform(0, video_duration - query_video_length)
-        frame_number = int(start_time*30)
+        video_duration = math.floor(get_video_duration(input_video_path))
+        start_time = random.randint(0, video_duration - query_video_length)
+        frame_number = start_time*30
 
         output_video_path = "../Dataset/Clips/" + video_name + '_' + str(frame_number) + '.mp4'
 
