@@ -3,3 +3,5 @@ target/*
 Dataset/*
 ./idea/name
 .idea
+mvn_install.log
+Logs/*
