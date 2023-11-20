@@ -16,16 +16,10 @@ def suppress_moviepy_output():
     finally:
         sys.stdout = original_stdout
 
-def get_video_duration(input_video_path):
+def generate_clip(input_video_path):
     with suppress_moviepy_output():
         clip = mp.VideoFileClip(input_video_path)
-        return clip.duration
-
-def clip_random_seconds(input_video_path, output_video_path, query_video_length, start_time):
-    with suppress_moviepy_output():
-        clip = mp.VideoFileClip(input_video_path)
-        clipped_clip = clip.subclip(start_time, start_time + query_video_length)
-        clipped_clip.write_videofile(output_video_path, codec='libx264', audio_codec='aac')
+        return clip
     
 def add_gaussian_noise(image):
     row, col, ch = image.shape
@@ -33,14 +27,11 @@ def add_gaussian_noise(image):
     noisy = np.clip(image + gauss, 0, 255)
     return noisy.astype(np.uint8)
 
-def process_frame(frame):
-    return add_gaussian_noise(frame)
-
-def add_noise_to_video(input_video_path, output_video_path):
+def clip_and_add_noise(clip, query_video_length, start_time, output_video_path):
     with suppress_moviepy_output():
-        clip = mp.VideoFileClip(input_video_path)
-        processed_clip = clip.fl_image(process_frame)
-        processed_clip.write_videofile(output_video_path, codec='libx264', audio_codec='aac')
+        clipped_clip = clip.subclip(start_time, start_time + query_video_length)
+        noised_clip = clipped_clip.fl_image(add_gaussian_noise)
+        noised_clip.write_videofile(output_video_path, codec='libx264', audio_codec='aac')
 
 mean = 0
 sigma = 5
@@ -67,20 +58,15 @@ for video_file in os.listdir(folder_path):
         input_video_path = folder_path + "/" + video_file
         video_name = video_file[:-4]
         
-        video_duration = math.floor(get_video_duration(input_video_path))
+        clip = generate_clip(input_video_path)
+        video_duration = math.floor(clip.duration)
         start_time = random.randint(0, video_duration - query_video_length)
         frame_number = start_time*30
 
-        output_video_path = "../Dataset/Clips/" + video_name + '_' + str(query_video_length) + '_' + str(frame_number) + '.mp4'
-
-        if not os.path.exists(output_video_path):
-            clip_random_seconds(input_video_path, output_video_path, query_video_length, start_time)
-
-        input_video_path = output_video_path
         output_video_path = "../Dataset/NoiseQuery/" + video_name + '_' + str(query_video_length) + '_' + str(mean) + '_' + str(sigma) + '_' + str(frame_number) + '.mp4'
 
         if not os.path.exists(output_video_path):    
-            add_noise_to_video(input_video_path, output_video_path)
+            clip_and_add_noise(clip, query_video_length, start_time, output_video_path)
             print("Clipped ", query_video_length, "seconds video with mean: ", mean, " and sigma: ", sigma ," created")
         else:
             print("Clipped ", query_video_length, "seconds video with mean: ", mean, " and sigma: ", sigma ," exists")

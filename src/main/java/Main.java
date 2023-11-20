@@ -328,7 +328,7 @@ public class Main {
         System.out.println("Finished processing " + fileName + " in " + (endTime - startTime) + " ms");
 
         // Comment this if you don't wanna test for test dataset
-        String dfWriterCommand = "python3 writeToCsv.py " + fileName + " " + ans[1];
+        String dfWriterCommand = "python3 writeToCsv.py " + fileName + " " + ans[1] + " " + args[2] + " " + args[3];
         Process writer = Runtime.getRuntime().exec(dfWriterCommand);
         writer.waitFor();
 
