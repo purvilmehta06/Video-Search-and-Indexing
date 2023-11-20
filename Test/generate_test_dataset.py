@@ -47,14 +47,14 @@ sigma = 5
 query_video_length = 10
 
 if (len(sys.argv) >= 4):
-    mean = sys.argv[1]
-    sigma = sys.argv[2]
-    query_video_length = sys.argv[3]
+    mean = int(sys.argv[1])
+    sigma = int(sys.argv[2])
+    query_video_length = int(sys.argv[3])
 elif (len(sys.argv) == 3):
-    mean = sys.argv[1]
-    sigma = sys.argv[2]
+    mean = int(sys.argv[1])
+    sigma = int(sys.argv[2])
 elif (len(sys.argv) == 2):
-    mean = sys.argv[1]
+    mean = int(sys.argv[1])
 
 folder_path = "../Dataset/Videos"
 
@@ -71,16 +71,16 @@ for video_file in os.listdir(folder_path):
         start_time = random.randint(0, video_duration - query_video_length)
         frame_number = start_time*30
 
-        output_video_path = "../Dataset/Clips/" + video_name + '_' + str(frame_number) + '.mp4'
+        output_video_path = "../Dataset/Clips/" + video_name + '_' + str(query_video_length) + '_' + str(frame_number) + '.mp4'
 
         if not os.path.exists(output_video_path):
             clip_random_seconds(input_video_path, output_video_path, query_video_length, start_time)
 
         input_video_path = output_video_path
-        output_video_path = "../Dataset/NoiseQuery/" + video_name + '_' + str(mean) + '_' + str(sigma) + '_' + str(frame_number) + '.mp4'
+        output_video_path = "../Dataset/NoiseQuery/" + video_name + '_' + str(query_video_length) + '_' + str(mean) + '_' + str(sigma) + '_' + str(frame_number) + '.mp4'
 
         if not os.path.exists(output_video_path):    
             add_noise_to_video(input_video_path, output_video_path)
-            print("Clipped video with mean and sigma created")
+            print("Clipped ", query_video_length, "seconds video with mean: ", mean, " and sigma: ", sigma ," created")
         else:
-            print("Clipped video with mean and sigma exists")
+            print("Clipped ", query_video_length, "seconds video with mean: ", mean, " and sigma: ", sigma ," exists")
