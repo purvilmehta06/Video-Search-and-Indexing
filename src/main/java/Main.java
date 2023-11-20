@@ -327,6 +327,11 @@ public class Main {
         System.out.println("Best match: " + matchVideoName + " at frame " + ans[1]);
         System.out.println("Finished processing " + fileName + " in " + (endTime - startTime) + " ms");
 
+        // Comment this if you don't wanna test for test dataset
+        String dfWriterCommand = "python3 writeToCsv.py " + fileName + " " + ans[1];
+        Process writer = Runtime.getRuntime().exec(dfWriterCommand);
+        writer.waitFor();
+
         // play the video
         String command = "python3 video_player.py " + VIDEO_FOLDER + "/" + matchVideoName + ".mp4 " + ans[1];
         Process p = Runtime.getRuntime().exec(command);
