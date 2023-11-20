@@ -299,6 +299,7 @@ public class Main {
         String inputQueryAudio = args[1];
         Boolean lowPass = args[2].equals("1");
         int k = Integer.parseInt(args[3]);
+        Boolean shouldWriteAnalysis = args[4].equals("1");
         String fileName = inputQueryVideo.substring(inputQueryVideo.lastIndexOf("/") + 1);
 
         // begin processing
@@ -326,6 +327,13 @@ public class Main {
         String matchVideoName = files[ans[0]].getName().substring(0, files[ans[0]].getName().length() - 4);
         System.out.println("Best match: " + matchVideoName + " at frame " + ans[1]);
         System.out.println("Finished processing " + fileName + " in " + (endTime - startTime) + " ms");
+
+        // Comment this if you don't wanna test for test dataset
+        if (shouldWriteAnalysis) {
+            String dfWriterCommand = "python3 write_to_csv.py " + fileName + " " + ans[1] + " " + args[2] + " " + args[3];
+            Process writer = Runtime.getRuntime().exec(dfWriterCommand);
+            writer.waitFor();
+        }
 
         // play the video
         String command = "python3 video_player.py " + VIDEO_FOLDER + "/" + matchVideoName + ".mp4 " + ans[1];
