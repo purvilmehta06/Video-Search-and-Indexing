@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.bytedeco:openblas:linux-ppc64le:0.3.23-1.5.9">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/bytedeco/openblas/0.3.23-1.5.9/openblas-0.3.23-1.5.9-linux-ppc64le.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/org/bytedeco/openblas/0.3.23-1.5.9/openblas-0.3.23-1.5.9-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/bytedeco/openblas/0.3.23-1.5.9/openblas-0.3.23-1.5.9-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

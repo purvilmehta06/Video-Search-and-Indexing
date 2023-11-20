@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.bytedeco:leptonica:android-arm64:1.83.0-1.5.9">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/bytedeco/leptonica/1.83.0-1.5.9/leptonica-1.83.0-1.5.9-android-arm64.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/org/bytedeco/leptonica/1.83.0-1.5.9/leptonica-1.83.0-1.5.9-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/bytedeco/leptonica/1.83.0-1.5.9/leptonica-1.83.0-1.5.9-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

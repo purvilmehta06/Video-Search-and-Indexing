@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.bytedeco:opencv:android-arm:4.7.0-1.5.9">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/bytedeco/opencv/4.7.0-1.5.9/opencv-4.7.0-1.5.9-android-arm.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/org/bytedeco/opencv/4.7.0-1.5.9/opencv-4.7.0-1.5.9-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/bytedeco/opencv/4.7.0-1.5.9/opencv-4.7.0-1.5.9-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
