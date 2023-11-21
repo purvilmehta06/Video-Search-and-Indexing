@@ -1,6 +1,7 @@
 .DS_Store
 target/*
 Dataset/*
+mvn_install.log
 ./idea/name
 Logs/*
 VideoPlayer.iml
