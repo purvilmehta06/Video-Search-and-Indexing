@@ -1,3 +1,4 @@
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -15,6 +16,8 @@ import org.bytedeco.javacpp.indexer.UByteRawIndexer;
 
 import static org.bytedeco.ffmpeg.global.avutil.AV_LOG_PANIC;
 import static org.bytedeco.ffmpeg.global.avutil.av_log_set_level;
+
+import java.io.FileWriter;
 
 public class Main {
 
@@ -217,6 +220,98 @@ public class Main {
         return newChannel;
     }
 
+    public record Dimensions(int width, int height) {
+    }
+
+    private static final Dimensions originalImageDimensions = new Dimensions(352, 288);
+    private final static int IMAGE_TYPE = BufferedImage.TYPE_INT_RGB;
+
+    public static int[] getRGB(int pixel) {
+        return new int[]{(pixel >> 16) & 0xFF, (pixel >> 8) & 0xFF, pixel & 0xFF};
+    }
+
+    private static BufferedImage readImageRGB(String imgPath, String filename, int frameGadedha) throws IOException {
+        BufferedImage img=null;
+        int frameLength = originalImageDimensions.width() * originalImageDimensions.height() * 3 * frameGadedha;
+//        System.out.println(frameLength);
+        File file = new File(imgPath);
+        RandomAccessFile raf = new RandomAccessFile(file, "r");
+        raf.seek(0);
+
+        byte[] bytes = new byte[(int) (long) frameLength];
+
+        raf.read(bytes);
+
+        FileWriter fileWriter = new FileWriter(filename);
+        PrintWriter printWriter = new PrintWriter(fileWriter);
+
+        int count = 0;
+        int sr = 0;
+        int sb = 0;
+        int sg = 0;
+
+        try(FileInputStream fileInputStream = new FileInputStream(imgPath)) {
+            // Read the file byte by byte
+            int byteRead;
+            int pixelCount = 0;
+
+            while ((byteRead = fileInputStream.read()) != -1) {
+                // Process the RGB values for each pixel
+                int red = byteRead;
+                int green = fileInputStream.read();
+                int blue = fileInputStream.read();
+
+                sr += red;
+                sb += blue;
+                sg += green;
+
+                pixelCount++;
+                if (pixelCount % (originalImageDimensions.height() * originalImageDimensions.width()) == 0) {
+                    count++;
+                    printWriter.printf("%d %d %d\n", sr, sg, sb);
+                    sr = 0;
+                    sb = 0;
+                    sg = 0;
+                    if (count > 9000) {
+                        break;
+                    } else if (count%100 == 0) {
+                        System.out.println(count);
+                    }
+                }
+
+            }
+        } catch (Exception e) {
+
+        }
+
+
+//            int ind = 0;
+//        for(int i=0;i < frameGadedha;i++) {
+//            int sr =0;
+//            int sb = 0;
+//            int sg = 0;
+//            for (int y = 0; y < originalImageDimensions.height(); y++) {
+//                for (int x = 0; x < originalImageDimensions.width(); x++) {
+//                    byte r = bytes[ind++];
+//                    byte g = bytes[ind++];
+//                    byte b = bytes[ind++];
+//
+//                    int pix = 0xff000000 | ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
+//                    int rgb[] = getRGB(pix);
+//                    sr += rgb[0];
+//                    sg += rgb[1];
+//                    sb += rgb[2];
+//                }
+//            }
+//            printWriter.printf("%d %d %d\n", sr, sg, sb);
+//        }
+
+        printWriter.close();
+
+        raf.close();
+        return img;
+    }
+
     /**
      * Get the rgb values of each frame of the video
      *
@@ -289,55 +384,65 @@ public class Main {
     }
 
     public static void main(String[] args) throws IOException, UnsupportedAudioFileException, InterruptedException {
-        if (args.length < 3) {
-            System.err.println("java VideoPlayer <mp4File> <smoothing> <k>");
-            return;
-        }
+        try {
+//            BufferedImage queryRGB = readImageRGB("Dataset/Queries/RGB/video11_1.rgb");
+//            BufferedImage a = readImageRGB("Dataset/Videos/video11.rgb", "convert_original_through_script.txt", 17300);
+//            BufferedImage b = readImageRGB("Dataset/Queries/video11_1.rgb", "convert_query_through_script.txt", 600);
+            BufferedImage c = readImageRGB("Dataset/Videos/RGB/video11.rgb", "log_original.txt", 17300);
+//            BufferedImage d = readImageRGB("Dataset/Queries/RGB/video11_1.rgb", "log_query.txt", 600);
 
-        // get the input arguments
-        String inputQueryVideo = args[0];
-        String inputQueryAudio = args[1];
-        Boolean lowPass = args[2].equals("1");
-        int k = Integer.parseInt(args[3]);
-        Boolean shouldWriteAnalysis = args[4].equals("1");
-        String fileName = inputQueryVideo.substring(inputQueryVideo.lastIndexOf("/") + 1);
+        } catch (Exception e) {
 
-        // begin processing
-        long startTime = System.currentTimeMillis();
-        System.out.println("Processing: " + fileName);
-        File folder = new File(PREPROCESSED_FOLDER);
-        if (lowPass) {
-            folder = new File(PREPROCESSED_FOLDER_LOW_PASS);
         }
-        File[] files = folder.listFiles();
-        int[][][][] rgbQueryVideo = getVideoRGBPerFrame(inputQueryVideo, lowPass);
-        int[][] rgbSums = getSumRGB(rgbQueryVideo);
-        int[][] topKMatches = findBestMatch(rgbSums, files, k);
-        if (lowPass) {
-            rgbQueryVideo = getVideoRGBPerFrame(inputQueryVideo, false);
-        }
-        int[] ans = findBestMatchFromTopK(rgbQueryVideo, topKMatches, files, inputQueryAudio);
-        long endTime = System.currentTimeMillis();
-
-        // end processing
-        if (ans[0] == -1) {
-            System.out.println("No match found");
-            return;
-        }
-        String matchVideoName = files[ans[0]].getName().substring(0, files[ans[0]].getName().length() - 4);
-        System.out.println("Best match: " + matchVideoName + " at frame " + ans[1]);
-        System.out.println("Finished processing " + fileName + " in " + (endTime - startTime) + " ms");
-
-        // Comment this if you don't wanna test for test dataset
-        if (shouldWriteAnalysis) {
-            String dfWriterCommand = "python3 write_to_csv.py " + fileName + " " + ans[1] + " " + args[2] + " " + args[3];
-            Process writer = Runtime.getRuntime().exec(dfWriterCommand);
-            writer.waitFor();
-        }
-
-        // play the video
-        String command = "python3 video_player.py " + VIDEO_FOLDER + "/" + matchVideoName + ".mp4 " + ans[1];
-        Process p = Runtime.getRuntime().exec(command);
-        p.waitFor();
+//        if (args.length < 3) {
+//            System.err.println("java VideoPlayer <mp4File> <smoothing> <k>");
+//            return;
+//        }
+//
+//        // get the input arguments
+//        String inputQueryVideo = args[0];
+//        String inputQueryAudio = args[1];
+//        Boolean lowPass = args[2].equals("1");
+//        int k = Integer.parseInt(args[3]);
+//        Boolean shouldWriteAnalysis = args[4].equals("1");
+//        String fileName = inputQueryVideo.substring(inputQueryVideo.lastIndexOf("/") + 1);
+//
+//        // begin processing
+//        long startTime = System.currentTimeMillis();
+//        System.out.println("Processing: " + fileName);
+//        File folder = new File(PREPROCESSED_FOLDER);
+//        if (lowPass) {
+//            folder = new File(PREPROCESSED_FOLDER_LOW_PASS);
+//        }
+//        File[] files = folder.listFiles();
+//        int[][][][] rgbQueryVideo = getVideoRGBPerFrame(inputQueryVideo, lowPass);
+//        int[][] rgbSums = getSumRGB(rgbQueryVideo);
+//        int[][] topKMatches = findBestMatch(rgbSums, files, k);
+//        if (lowPass) {
+//            rgbQueryVideo = getVideoRGBPerFrame(inputQueryVideo, false);
+//        }
+//        int[] ans = findBestMatchFromTopK(rgbQueryVideo, topKMatches, files, inputQueryAudio);
+//        long endTime = System.currentTimeMillis();
+//
+//        // end processing
+//        if (ans[0] == -1) {
+//            System.out.println("No match found");
+//            return;
+//        }
+//        String matchVideoName = files[ans[0]].getName().substring(0, files[ans[0]].getName().length() - 4);
+//        System.out.println("Best match: " + matchVideoName + " at frame " + ans[1]);
+//        System.out.println("Finished processing " + fileName + " in " + (endTime - startTime) + " ms");
+//
+//        // Comment this if you don't wanna test for test dataset
+//        if (shouldWriteAnalysis) {
+//            String dfWriterCommand = "python3 write_to_csv.py " + fileName + " " + ans[1] + " " + args[2] + " " + args[3];
+//            Process writer = Runtime.getRuntime().exec(dfWriterCommand);
+//            writer.waitFor();
+//        }
+//
+//        // play the video
+//        String command = "python3 video_player.py " + VIDEO_FOLDER + "/" + matchVideoName + ".mp4 " + ans[1];
+//        Process p = Runtime.getRuntime().exec(command);
+//        p.waitFor();
     }
 }
