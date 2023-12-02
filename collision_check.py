@@ -17,7 +17,7 @@ def add_rgb_values_to_set(file_name):
 			if tuple(consecutive_values) in set_of_consecutive_rgb_sum_values:
 				print("Already present in set")
 			else:
-			    set_of_rgb_values.add(tuple(consecutive_values))
+			    set_of_consecutive_rgb_sum_values.add(tuple(consecutive_values))
 			    set_of_consecutive_rgb_sum_values.pop(0)
 
 if __name__ == "__main__":
