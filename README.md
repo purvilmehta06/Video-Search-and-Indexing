@@ -11,14 +11,26 @@
 * Clone this repository. 
 * Create a folder named `Dataset` in the root directory of the project. 
   * Download the dataset from the link given above and extract it in the `Dataset` folder.
+  * To avoid confusion, here is what the directory structure should look like:
+  * ```
+    Dataset
+      Videos
+        1.mp4
+        2.mp4
+        ...
+      Queries
+        RGB_Files
+          1.rgb
+          2.rgb
+          ...
+        1.mp4
+        2.mp4
+        ...
+    ```
 * Install Maven and Java
-* Run the following command to build the project
+* Run the following command to build & run the project
 ```
-mvn clean install
-```
-* Run the following command to run the project
-```
-mvn exec:java -Dexec.args="<QUERY_VIDEO_FILE.mp4>"
+./script.sh
 ```
 
 ### Contributors
