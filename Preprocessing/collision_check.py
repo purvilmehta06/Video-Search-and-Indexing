@@ -22,7 +22,7 @@ def add_rgb_values_to_set(file_name):
 			    consecutive_values.pop(0)
 
 if __name__ == "__main__":
-    folder_path = "Preprocessing/rgb_sum_values/"
+    folder_path = "rgb_sum_values/"
     for value_file in os.listdir(folder_path):
         print("Processing: ", value_file)
         add_rgb_values_to_set(folder_path + value_file)

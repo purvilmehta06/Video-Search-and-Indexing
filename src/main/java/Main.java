@@ -1,5 +1,4 @@
 import java.io.*;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
 
@@ -7,19 +6,24 @@ public class Main {
 
     public static final Integer WIDTH = 352;
     public static final Integer HEIGHT = 288;
-    public static final String PREPROCESSED_FOLDER = "./Preprocessing/rgb_sum_values";
-    public static final Integer pixelsPerFrame = 352 * 288;
+    public static final Integer pixelsPerFrame = WIDTH * HEIGHT;
     public static final Integer bytesPerPixel = 3;
     public static final Integer UNIQUE_FRAMES = 300;
+    public static final String PREPROCESSED_FOLDER = "./Preprocessing/rgb_sum_values";
 
+    /** Process a frame and return the sum of RGB values
+     * @param buffer: byte array of the frame
+     * @return String: sum of RGB values
+     */
     private static String processFrame(byte[] buffer) {
         int []rgb = new int[3];
+        int index = 0;
         for (int y = 0; y < HEIGHT; y++) {
             for (int x = 0; x < WIDTH; x++) {
-                int index = (y * WIDTH + x) * 3;
                 int red = buffer[index] & 0xFF;
                 int green = buffer[index + 1] & 0xFF;
                 int blue = buffer[index + 2] & 0xFF;
+                index += 3;
                 rgb[0] += red;
                 rgb[1] += green;
                 rgb[2] += blue;
@@ -28,6 +32,10 @@ public class Main {
         return rgb[0] + "-" + rgb[1] + "-" + rgb[2];
     }
 
+    /** Process all the txt files in the Preprocessing folder and create a hash map
+     * @return HashMap: key: sum of RGB values of 300 unique frames, value: [video name, starting frame]
+     * @throws IOException
+     */
     private static HashMap<String, String[]> processVideoTxtFiles() throws IOException {
         File[] files = new File(PREPROCESSED_FOLDER).listFiles();
         HashMap<String, String[]> rgbHash = new HashMap<>();
@@ -51,15 +59,20 @@ public class Main {
         return rgbHash;
     }
 
+    /** Process the input query video and return the video name and starting frame
+     * @param inputQueryVideo: path to the input query video
+     * @param rgbHash: hash map created from the pre-processing step
+     * @return String[]: [video name, starting frame]
+     * @throws IOException
+     */
     public static String[] processInput(String inputQueryVideo, HashMap<String, String[]> rgbHash) throws IOException {
         ArrayList<String> rgbSums = new ArrayList<>();
-        String keyToFind;
         DataInputStream dis = new DataInputStream(new FileInputStream(inputQueryVideo));
         byte[] buffer = new byte[pixelsPerFrame * bytesPerPixel];
         while (dis.read(buffer) != -1) {
             rgbSums.add(processFrame(buffer));
             if (rgbSums.size() == UNIQUE_FRAMES) {
-                keyToFind = String.join("-", rgbSums);
+                String keyToFind = String.join("-", rgbSums);
                 return rgbHash.getOrDefault(keyToFind, null);
             }
         }
@@ -79,7 +92,7 @@ public class Main {
         boolean continueProcessing = true;
         while (continueProcessing) {
             System.out.println("===========================================");
-            System.out.println("Enter input (Press 'esc' to exit): ");
+            System.out.println("Enter input (Press 'ctrl + c' to exit): ");
             String userInput = scanner.nextLine();
 
             long startTime = System.currentTimeMillis();
@@ -96,11 +109,6 @@ public class Main {
                 System.out.println("Time Taken    : " + (endTime - startTime) + "ms");
                 System.out.println("===========================================\n");
                 writer.println(ans[0] + ".mp4" + " " + ans[1]);
-            }
-
-            // Check for the escape condition
-            if (userInput.equalsIgnoreCase("esc")) {
-                continueProcessing = false;
             }
         }
         socket.close();
