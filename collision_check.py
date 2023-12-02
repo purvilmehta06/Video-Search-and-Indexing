@@ -10,15 +10,15 @@ def add_rgb_values_to_set(file_name):
 	list_values = []
 	for value in values:
 		list_values.append(tuple([int(num) for num in value.split(' ')]))
-	six_hundred_consecutive_values = []
+	consecutive_values = []
 	for value in list_values:
-		six_hundred_consecutive_values.append(value)
-		if (len(six_hundred_consecutive_values) == 450):
-			if tuple(six_hundred_consecutive_values) in set_of_rgb_values:
+		consecutive_values.append(value)
+		if (len(consecutive_values) == 450):
+			if tuple(consecutive_values) in set_of_rgb_values:
 				print("Already present in set")
 			else:
-			    set_of_rgb_values.add(tuple(six_hundred_consecutive_values))
-			    six_hundred_consecutive_values.pop(0)
+			    set_of_rgb_values.add(tuple(consecutive_values))
+			    consecutive_values.pop(0)
 
 folder_path = "Preprocessing/rgb_sum_values/"
 for value_file in os.listdir(folder_path):
